@@ -40,7 +40,7 @@ def dir_gen(fname, number, is_cut_comment, code_name):
         for line in baseText:
             line_num += 1
             code_comment = line.split('//')
-            line_code = code_comment[0]
+            line_code = code_comment[0][:-1]
             c_index = -1
             if len(code_comment) > 1:
                 c_index = int(code_comment[1][1:3])
