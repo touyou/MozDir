@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import sys
+import os
+import shutil
+from argparse import ArgumentParser
+
+def dir_gen(fname, number, is_cut_comment, code_name):
+    validate_template = '''(function validate(editorContentMap, $, util) {{
+
+    const result = {{}};
+    const editor = editorContentMap['{}_editor.js'];
+
+    let isCorrectGrammer = false;
+'''.format(code_name)
+    ftypes = ['begin', 'input', 'result']
+    # ファイル読み込みは最初の一回のみで
+    baseText = []
+    for line in open('./{}990/editor/{}_editor.js'.format(fname, code_name), 'r'):
+        baseText.append(line)
+    for i in range(1, number+1):
+        # 基本的なフォルダのコピー
+        for ftype in ftypes:
+            tfname = '{}{:02}0-{}'.format(fname, i, ftype)
+            shutil.copytree('./{}990'.format(fname), './{}'.format(tfname))
+            os.rename('./{}/{}990.html'.format(tfname, fname), './{0}/{0}.html'.format(tfname))
+        # [code_name]_editor.jsをいじっていく
+        begin_text = ''
+        input_text = ''
+        result_text = ''
+        vn = 0
+        v_text = validate_template
+        v_eval_text = ''
+        v_eq_text = ''
+        v_ret_text = '''
+        result.allCorrect = isCorrectGrammer
+        '''
+        line_num = 0
+        for line in baseText:
+            line_num += 1
+            code_comment = line.split('//')
+            line_code = code_comment[0]
+            c_index = -1
+            if len(code_comment) > 1:
+                c_index = int(code_comment[1][1:3])
+            if c_index < i:
+                if is_cut_comment:
+                    begin_text += line_code + '\n'
+                    input_text += line_code + '\n'
+                    result_text += line_code + '\n'
+                else:
+                    begin_text += line
+                    input_text += line
+                    result_text += line
+            elif c_index == i:
+                if is_cut_comment:
+                    input_text += '//' + line_code + '\n'
+                    result_text += line_code + '\n'
+                else:
+                    input_text += '//' + line
+                begin_text += '\n'
+                # validation
+                vn += 1
+                v_text += '''    let isText{} = false;
+                '''.format(vn)
+                v_eval_text += '''        isText{vn} = util.evaluateTextRow(editor, '{code}', {line});
+                '''.format(vn=vn, code=line_code, line=line_num)
+                v_eq_text += '''        result.isText{0} = isText{0};
+                '''.format(vn)
+                v_ret_text += ' && isText{}'.format(vn)
+            else:
+                line_num -= 1
+        begin_p = '{}{:02}0-begin'.format(fname, i)
+        input_p = '{}{:02}0-input'.format(fname, i)
+        result_p = '{}{:02}0-result'.format(fname, i)
+        begin_file = open('./{}/editor/{}_editor.js'.format(begin_p, code_name), 'w')
+        input_file = open('./{}/editor/{}_editor.js'.format(input_p, code_name), 'w')
+        result_file = open('./{}/editor/{}_editor.js'.format(result_p, code_name), 'w')
+        validate_file = open('./{}/validation/test.js'.format(input_p), 'w')
+        begin_file.write(begin_text)
+        input_file.write(input_text)
+        result_file.write(result_text)
+        v_text += '''    try {{
+        isCorrectGrammer = util.isCorrectGrammer(editor);
+
+        {}
+
+        result.isCorrectGrammer = isCorrectGrammer;
+        {}
+        {};
+
+    }} catch(e) {{
+        result.error = e.message;
+    }}
+
+    return result;
+}})
+'''.format(v_eval_text, v_eq_text, v_ret_text)
+        validate_file.write(v_text)
+
+
+def main():
+    usage = 'Usage: {} FOLDER NUMBER [-c | --cut] [-n | --name <file>] [-h | --help]'.format(__file__)
+    argparser = ArgumentParser(usage=usage)
+    argparser.add_argument('folder', type=str, help='target folder name excluded 990')
+    argparser.add_argument('number', type=int, help='number of lesson')
+    argparser.add_argument('-c', '--cut', action='store_true', help='cut comment')
+    argparser.add_argument('-n', '--name', type=str, dest='code_name', default='sketch', help='change the target code file')
+
+    args = argparser.parse_args()
+    dir_gen(args.folder, args.number, args.cut, args.code_name)
+
+if __name__ == '__main__':
+    main()
