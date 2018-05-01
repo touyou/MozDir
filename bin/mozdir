@@ -62,7 +62,7 @@ def dir_gen(fname, number, is_cut_comment, code_name):
                 vn += 1
                 v_text += '''    let isText{} = false;
 '''.format(vn)
-                v_eval_text += '''isText{vn} = util.evaluateTextRow(editor, '{code}', {line});
+                v_eval_text += '''isText{vn} = util.evaluateTextRow(editor, "{code}", {line});
 '''.format(vn=vn, code=line_code.lstrip(), line=line_num)
                 v_eq_text += '''result.isText{0} = isText{0};
 '''.format(vn)
