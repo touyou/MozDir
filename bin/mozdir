@@ -33,9 +33,7 @@ def dir_gen(fname, number, is_cut_comment, code_name):
         v_text = validate_template
         v_eval_text = ''
         v_eq_text = ''
-        v_ret_text = '''
-        result.allCorrect = isCorrectGrammer
-        '''
+        v_ret_text = 'result.allCorrect = isCorrectGrammer'
         line_num = 0
         for line in baseText:
             line_num += 1
@@ -63,11 +61,11 @@ def dir_gen(fname, number, is_cut_comment, code_name):
                 # validation
                 vn += 1
                 v_text += '''    let isText{} = false;
-                '''.format(vn)
-                v_eval_text += '''        isText{vn} = util.evaluateTextRow(editor, '{code}', {line});
-                '''.format(vn=vn, code=line_code, line=line_num)
-                v_eq_text += '''        result.isText{0} = isText{0};
-                '''.format(vn)
+'''.format(vn)
+                v_eval_text += '''isText{vn} = util.evaluateTextRow(editor, '{code}', {line});
+'''.format(vn=vn, code=line_code.lstrip(), line=line_num)
+                v_eq_text += '''result.isText{0} = isText{0};
+'''.format(vn)
                 v_ret_text += ' && isText{}'.format(vn)
             else:
                 line_num -= 1
@@ -81,7 +79,7 @@ def dir_gen(fname, number, is_cut_comment, code_name):
         begin_file.write(begin_text)
         input_file.write(input_text)
         result_file.write(result_text)
-        v_text += '''    try {{
+        v_text += '''   try {{
         isCorrectGrammer = util.isCorrectGrammer(editor);
 
         {}
