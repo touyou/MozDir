@@ -5,7 +5,7 @@
 Python3とmakeコマンドが使える状態なら
 
 ```
-$ make
+$ make install
 ```
 
 のみ。無ければ
@@ -22,3 +22,7 @@ $ python3 setup.py install --user
 ```
 $ mozdir FOLDER NUMBER [-c | --cut] [-n | --name <file>] [-h | --help]
 ```
+
+- FOLDERには基本lessonを入れるとlesson990がコピーされていきます。
+- NUMBERには分ける数を、コメントを削除した状態にしたい場合は-cまたは--cutオプション
+- sketch_editor.jsではない名前のときは-nまたは--nameオプションの後にたとえばmain_editor.jsならmainを渡してあげます。
