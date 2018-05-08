@@ -19,7 +19,7 @@ def dir_gen(fname, number, is_cut_comment, code_name):
     baseText = []
     for line in open('./{}990/editor/{}_editor.js'.format(fname, code_name), 'r'):
         baseText.append(line)
-    for i in range(1, number+1):
+    for i in range(0, number):
         # 基本的なフォルダのコピー
         for ftype in ftypes:
             tfname = '{}{:02}0-{}'.format(fname, i, ftype)
