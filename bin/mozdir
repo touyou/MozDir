@@ -9,14 +9,15 @@ from argparse import ArgumentParser
 def dir_gen(fname, number, is_cut_comment, code_name):
     validate_template = '''(function validate(editorContentMap, $, util) {{
 
-    const result = {{}};
-    const editor = editorContentMap['{}_editor.js'];
+  const result = {{}};
+  const editor = editorContentMap['{}_editor.js'];
 
-    let isCorrectGrammer = false;
+  let isCorrectGrammer = false;
 '''.format(code_name)
     ftypes = ['begin', 'input', 'result']
     # ファイル読み込みは最初の一回のみで
     baseText = []
+    is_cut_comment = True
     for line in open('./{}990/editor/{}_editor.js'.format(fname, code_name), 'r'):
         baseText.append(line)
     for i in range(0, number):
@@ -38,40 +39,61 @@ def dir_gen(fname, number, is_cut_comment, code_name):
         for line in baseText:
             line_num += 1
             code_comment = line.split('//')
-            line_code = code_comment[0][:-1]
-            c_index = -1
+            line_code = [code_comment[0].rstrip()]
+            c_index = [-1]
             if len(code_comment) > 1:
-                c_index = int(code_comment[1][1:3])
-            if c_index < i:
-                if is_cut_comment:
-                    begin_text += line_code + '\n'
-                    input_text += line_code + '\n'
-                    result_text += line_code + '\n'
-                else:
-                    begin_text += line
-                    input_text += line
-                    result_text += line
-            elif c_index == i:
-                if is_cut_comment:
-                    input_text += '//' + line_code + '\n'
-                    result_text += line_code + '\n'
-                else:
-                    input_text += '//' + line
-                begin_text += '\n'
-                # validation
-                vn += 1
-                v_text += '''    let isText{} = false;
+                c_index[0] = int(code_comment[1][1:3])
+            if len(code_comment) > 2:
+                code_index = 2
+                while code_index < len(code_comment):
+                    line_code.append(code_comment[code_index].rstrip())
+                    c_index.append(int(code_comment[code_index+1][1:3]))
+                    code_index += 2
+            is_concern = False
+            for c in enumerate(c_index):
+                if c == i:
+                    is_concern = True
+            for j, c in enumerate(c_index):
+                if c < i and not is_concern:
+                    if is_cut_comment:
+                        begin_text += line_code[j] + '\n'
+                        input_text += line_code[j] + '\n'
+                        result_text += line_code[j] + '\n'
+                    else:
+                        begin_text += line
+                        input_text += line
+                        result_text += line
+                elif c < i and j + 1 < len(c_index) and c_index[j + 1] == i:
+                    if is_cut_comment:
+                        begin_text += line_code[j] + '\n'
+                        input_text += line_code[j]
+                    else:
+                        begin_text += line
+                        input_text += line
+                        result_text += line
+                elif c == i:
+                    if is_cut_comment:
+                        if len(c_index) == 1 or j == 0:
+                            begin_text += '\n'
+                        input_text += '//' + line_code[j] + '\n'
+                        result_text += line_code[j] + '\n'
+                    else:
+                        input_text += '//' + line
+                        begin_text += '\n'
+                    # validation
+                    vn += 1
+                    v_text += '''  let isText{} = false;
 '''.format(vn)
-                if vn != 1:
-                    v_eval_text += '    '
-                    v_eq_text += '    '
-                v_eval_text += '''isText{vn} = util.evaluateTextRow(editor, "{code}", {line});
-'''.format(vn=vn, code=line_code.lstrip(), line=line_num)
-                v_eq_text += '''result.isText{0} = isText{0};
+                    if vn != 1:
+                        v_eval_text += '  '
+                        v_eq_text += '  '
+                    v_eval_text += '''isText{vn} = util.evaluateTextRow(editor, "{code}", {line});
+'''.format(vn=vn, code=line_code[j].lstrip(), line=line_num)
+                    v_eq_text += '''result.isText{0} = isText{0};
 '''.format(vn)
-                v_ret_text += ' && isText{}'.format(vn)
-            else:
-                line_num -= 1
+                    v_ret_text += ' && isText{}'.format(vn)
+                else:
+                    line_num -= 1
         begin_p = '{}{:02}0-begin'.format(fname, i)
         input_p = '{}{:02}0-input'.format(fname, i)
         result_p = '{}{:02}0-result'.format(fname, i)
@@ -82,20 +104,18 @@ def dir_gen(fname, number, is_cut_comment, code_name):
         begin_file.write(begin_text)
         input_file.write(input_text)
         result_file.write(result_text)
-        v_text += '''   try {{
-        isCorrectGrammer = util.isCorrectGrammer(editor);
+        v_text += '''  try {{
+    isCorrectGrammer = util.isCorrectGrammer(editor);
 
-        {}
+    {}
 
-        result.isCorrectGrammer = isCorrectGrammer;
-        {}
-        {};
-
-    }} catch(e) {{
-        result.error = e.message;
-    }}
-
-    return result;
+    result.isCorrectGrammer = isCorrectGrammer;
+    {}
+    {};
+  }} catch(e) {{
+    result.error = e.message;
+  }}
+  return result;
 }})
 '''.format(v_eval_text, v_eq_text, v_ret_text)
         validate_file.write(v_text)
