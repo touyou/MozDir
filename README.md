@@ -15,12 +15,12 @@ $ brew install python3
 $ python3 setup.py install --user
 ```
 
-を実行する。
+を実行する。(もしエラーが出る場合は--userを省略)
 
 ## Usage
 
 ```
-$ mozdir FOLDER NUMBER [-c | --cut] [-n | --name <file>] [-h | --help]
+$ mozdir FOLDER NUMBER [-c | --cut] [-n | --name <file>] [-h | --help] [-oc | --only-copy]
 ```
 
 - FOLDERには基本lessonを入れるとlesson990がコピーされていきます。
