@@ -20,6 +20,9 @@ def dir_gen(fname, number, is_cut_comment, code_name):
     is_cut_comment = True
     for line in open('./{}990/editor/{}_editor.js'.format(fname, code_name), 'r'):
         baseText.append(line)
+    begin_texts = [''] * len(baseText)
+    input_texts = [''] * len(baseText)
+    result_texts = [''] * len(baseText)
     for i in range(0, number):
         # 基本的なフォルダのコピー
         for ftype in ftypes:
@@ -27,9 +30,6 @@ def dir_gen(fname, number, is_cut_comment, code_name):
             shutil.copytree('./{}990'.format(fname), './{}'.format(tfname))
             os.rename('./{}/{}990.html'.format(tfname, fname), './{0}/{0}.html'.format(tfname))
         # [code_name]_editor.jsをいじっていく
-        begin_text = ''
-        input_text = ''
-        result_text = ''
         vn = 0
         v_text = validate_template
         v_eval_text = ''
@@ -39,61 +39,58 @@ def dir_gen(fname, number, is_cut_comment, code_name):
         for line in baseText:
             line_num += 1
             code_comment = line.split('//')
-            line_code = [code_comment[0].rstrip()]
-            c_index = [-1]
+            line_code = code_comment[0].rstrip()
+            c_index_start = -1
+            c_index_end = 100
             if len(code_comment) > 1:
-                c_index[0] = int(code_comment[1][1:3])
-            if len(code_comment) > 2:
-                code_index = 2
-                while code_index < len(code_comment):
-                    line_code.append(code_comment[code_index].rstrip())
-                    c_index.append(int(code_comment[code_index+1][1:3]))
-                    code_index += 2
-            is_concern = False
-            for c in enumerate(c_index):
-                if c == i:
-                    is_concern = True
-            for j, c in enumerate(c_index):
-                if c < i and not is_concern:
-                    if is_cut_comment:
-                        begin_text += line_code[j] + '\n'
-                        input_text += line_code[j] + '\n'
-                        result_text += line_code[j] + '\n'
+                c_index_strs = code_comment[1].split('-')
+                c_index_start = int(c_index_strs[0])
+                c_index_end = int(c_index_strs[1])
+                if len(c_index_strs) > 2:
+                    line_num = int(c_index_strs[2])
+            # c_index_start <= i <= c_index_endだと生き残り
+            # c_index_start > iだとなにも入力しない
+            # c_index_end < iでもなにも入力しない
+            # c_index_start == -1ならそのまま残す
+            if c_index_start == -1 or (c_index_start < i and c_index_end >= i):
+                if is_cut_comment:
+                    begin_texts[line_num] = line_code + '\n'
+                    input_texts[line_num] = line_code + '\n'
+                    result_texts[line_num] = line_code + '\n'
+                else:
+                    begin_texts[line_num] = line
+                    input_texts[line_num] = line
+                    result_texts[line_num] = line
+            elif c_index_start == i:
+                if is_cut_comment:
+                    begin_texts[line_num] = '\n'
+                    if line_code == '':
+                        input_texts[line_num] = '\n'
                     else:
-                        begin_text += line
-                        input_text += line
-                        result_text += line
-                elif c < i and j + 1 < len(c_index) and c_index[j + 1] == i:
-                    if is_cut_comment:
-                        begin_text += line_code[j] + '\n'
-                        input_text += line_code[j]
+                        input_texts[line_num] = '//' + line_code + '\n'
+                    result_texts[line_num] = line_code + '\n'
+                else:
+                    begin_texts[line_num] = '\n'
+                    if line_code == '':
+                        input_texts[line_num] = line_code + '\n'
+                        result_texts[line_num] = line_code + '\n'
                     else:
-                        begin_text += line
-                        input_text += line
-                        result_text += line
-                elif c == i:
-                    if is_cut_comment:
-                        if len(c_index) == 1 or j == 0:
-                            begin_text += '\n'
-                        input_text += '//' + line_code[j] + '\n'
-                        result_text += line_code[j] + '\n'
-                    else:
-                        input_text += '//' + line
-                        begin_text += '\n'
-                    # validation
+                        input_texts[line_num] = '//' + line
+                        result_texts[line_num] = line
+                # 空行じゃなければバリデーションに追加
+                if line_code != '':
                     vn += 1
                     v_text += '''  let isText{} = false;
 '''.format(vn)
                     if vn != 1:
-                        v_eval_text += '  '
-                        v_eq_text += '  '
+                        v_eval_text += '    '
+                        v_eq_text += '    '
                     v_eval_text += '''isText{vn} = util.evaluateTextRow(editor, "{code}", {line});
-'''.format(vn=vn, code=line_code[j].lstrip(), line=line_num)
+'''.format(vn=vn, code=line_code.lstrip(), line=line_num)
                     v_eq_text += '''result.isText{0} = isText{0};
 '''.format(vn)
                     v_ret_text += ' && isText{}'.format(vn)
-                else:
-                    line_num -= 1
+            # elif c_index_end:
         begin_p = '{}{:02}0-begin'.format(fname, i)
         input_p = '{}{:02}0-input'.format(fname, i)
         result_p = '{}{:02}0-result'.format(fname, i)
